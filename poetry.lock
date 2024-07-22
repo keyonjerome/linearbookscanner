@@ -660,6 +660,14 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+name = "spidev"
+version = "3.6"
+description = "Python bindings for Linux SPI access through spidev"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -707,7 +715,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "ca2661daa2d6855f39cce54ece133bb101c7df67862e7adb114aa1a0b2a6caa6"
+content-hash = "bd4bede23b6aaa2c38aacefe64f9acfa92407b60f89f3d57111d26460ed419cf"
 
 [metadata.files]
 alabaster = []
@@ -765,6 +773,7 @@ sphinxcontrib-htmlhelp = []
 sphinxcontrib-jsmath = []
 sphinxcontrib-qthelp = []
 sphinxcontrib-serializinghtml = []
+spidev = []
 tomli = []
 tomlkit = []
 typing-extensions = []
