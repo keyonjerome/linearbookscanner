@@ -1,24 +1,35 @@
 """Linear Book Scanner main program"""
 
-# import threading
+import threading
+import logging
 
 # from . import helpers
-# from . import scanner
-# from . import spi
+from . import scanner
+from . import spi
 
-# """ Run the motor thread"""
-# def motor_thread() -> None:
-#     spi_runner = spi.ArduinoComms()
-#     spi_runner.run()
 
-# """ Run the scanner thread"""
-# def scanner_thread() -> None:
-#     scanner_runner = scanner.Scanner()
+def motor_thread() -> None:
+    """Run the motor communication thread"""
+    spi_runner = spi.ArduinoComms()
+    spi_runner.run()
+
+
+def scanner_thread() -> None:
+    """Run the scanner thread"""
+    scanner_runner = scanner.Scanner()
+    scanner.run()
 
 
 def main() -> None:
     """Main for the Linear Book Scanner"""
-    print("LinearBookScanner Main")
+    motor = threading.Thread(target=motor_thread)
+    motor.start()
+
+    scanner = threading.Thread(target=scanner_thread)
+    scanner.start()
+
+    motor.join()
+    scanner.join()
 
 
 if __name__ == "__main__":
