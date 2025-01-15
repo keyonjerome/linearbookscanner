@@ -1,0 +1,50 @@
+# STM32CubeIDE specific
+.vscode/
+Debug/
+Release/
+*.launch
+*.uvoptx
+*.uvprojx
+
+# Eclipse specific
+.settings/
+.cproject
+.project
+*.loadpath
+
+# STM32CubeMX generated files
+*.ioc
+*.mex
+*.log
+Makefile
+makefile
+*.bin
+*.elf
+*.hex
+*.map
+*.list
+*.out
+
+# Object files and dependencies
+*.o
+*.d
+*.su
+
+# Temporary files
+*.bak
+*.swp
+*.tmp
+*.~*
+
+# Libraries and auto-generated code
+Middlewares/
+Drivers/
+
+# User-specific files
+*.user
+*.exe
+
+# Backup and trash files
+*.old
+*.backup
+*.trash
