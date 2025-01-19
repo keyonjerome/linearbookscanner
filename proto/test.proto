@@ -1,6 +1,63 @@
 syntax = "proto3";
 
-message ExampleMessage {
-    int32 id = 1;
-    string name = 2;
+package spi_protocol;
+
+message SpiMessage {
+    uint32 sequence_number = 1; 
+    MessageType type = 2;
+    Device device = 3;
+    oneof msg {
+        Command command = 4;
+        Response response = 5;
+        Status status = 6;
+    }
+}
+
+enum Device {
+    RPI = 0;
+    STM32 = 1;
+}
+
+// Enum for message types
+enum MessageType {
+  UNKNOWN = 0;
+  COMMAND = 1;
+  RESPONSE = 2;
+  STATUS = 3;
+}
+
+enum CommandType {
+    FLIP_PAGE = 0;
+}
+
+enum DeviceState {
+    INIT = 0;
+    RUNNING = 1;
+    STOPPED = 2;
+}
+
+message Status {
+    DeviceState state = 2;
+    uint32 ticks = 3;    
+}
+
+message Command {
+    CommandType command_type = 1; // Type of command
+    oneof payload {
+        bytes defaultpayload = 2; //
+    }
+}
+
+// Response message to return results or acknowledgments
+message Response {
+  ResponseCode response_code = 1; // Status of the command
+  bytes payload = 2;              // Data returned from the command
+}
+
+// Enum for response codes
+enum ResponseCode {
+  SUCCESS = 0;
+  ERROR = 1;
+  INVALID_COMMAND = 2;
+  TIMEOUT = 3;
 }
