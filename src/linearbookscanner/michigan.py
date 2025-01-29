@@ -99,12 +99,18 @@ class LBS_Control:
         time.sleep(1)
         
         # Move to end stop
-        self.send_position(-32000 + int(self.variable_1 * self.variable_4), int(self.variable_5))
+        # self.send_position(-32000 + int(self.variable_1 * self.variable_4), int(self.variable_5))
+        self.send_position(100,50)
         time.sleep(1)
 
         # Return to home
         self.send_position(-32000, int(self.variable_6))
         print("Scan Cycle Complete")
+    
+    def scan_test_cycle(self):
+        self.send_position(0,200)
+        time.sleep(1)
+        self.send_position(250,100)
 
     def cleanup(self):
         GPIO.cleanup()
@@ -114,7 +120,7 @@ if __name__ == "__main__":
     try:
         lbs = LBS_Control()
         while True:
-            lbs.scan_cycle()
+            lbs.scan_test_cycle()
     except KeyboardInterrupt:
         print("Process Interrupted")
     finally:

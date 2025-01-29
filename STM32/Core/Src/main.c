@@ -43,6 +43,8 @@
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 
+//GPIO_InitTypeDef GPIO_InitStruct = {0};
+
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
@@ -59,6 +61,15 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 void StartDefaultTask(void *argument);
+
+#define MOTOR_PULSE_PIN GPIO_PIN_0
+#define MOTOR_DIR_PIN GPIO_PIN_1
+#define MOTOR_ENABLE_PIN GPIO_PIN_2
+
+// Constants
+#define STEPS_PER_REVOLUTION 200 // For a 1.8° step angle motor
+#define MICROSTEPPING 16         // TB6600 microstepping setting (e.g., 1/16)
+#define TOTAL_STEPS (STEPS_PER_REVOLUTION * MICROSTEPPING) // Total steps per revolution
 
 /* USER CODE BEGIN PFP */
 
@@ -109,6 +120,8 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI1_Init();
+  MX_TIM2_Init();
+
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -144,6 +157,14 @@ int main(void)
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
+  // Enable motor
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_SET);
+  // Set direction (clockwise)
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+
+  // Disable motor
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+
   /* Start scheduler */
   osKernelStart();
 
@@ -154,10 +175,58 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+
+
+void step_motor(uint32_t steps, uint32_t delay) {
+    for (uint32_t i = 0; i < steps; i++) {
+        HAL_GPIO_WritePin(GPIOA, MOTOR_PULSE_PIN, GPIO_PIN_SET); // Step high
+        HAL_Delay(delay);
+        HAL_GPIO_WritePin(GPIOA, MOTOR_PULSE_PIN, GPIO_PIN_RESET); // Step low
+        HAL_Delay(delay);
+    }
+}
+
+// Function to move the motor to a specific angle
+void go_to_angle(float target_angle, uint32_t delay) {
+    // Calculate the number of steps required
+    uint32_t steps = (uint32_t)((target_angle / 360.0) * TOTAL_STEPS);
+
+    // Set direction (clockwise or counterclockwise)
+    if (target_angle > 0) {
+        HAL_GPIO_WritePin(GPIOA, MOTOR_DIR_PIN, GPIO_PIN_SET); // Clockwise
+    } else {
+        HAL_GPIO_WritePin(GPIOA, MOTOR_DIR_PIN, GPIO_PIN_RESET); // Counterclockwise
+    }
+
+    // Step the motor
+    step_motor(steps, delay);
+}
+
+TIM_HandleTypeDef htim2;
+
+void MX_TIM2_Init(void) {
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+    htim2.Instance = TIM2;
+    htim2.Init.Prescaler = 0;
+    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim2.Init.Period = 1000; // Adjust for desired step rate
+    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    HAL_TIM_Base_Init(&htim2);
+
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig);
+
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig);
 }
 
 /**
@@ -247,9 +316,16 @@ static void MX_GPIO_Init(void)
 {
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
-
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = MOTOR_PULSE_PIN | MOTOR_DIR_PIN | MOTOR_ENABLE_PIN ;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -272,7 +348,12 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+
+	// Go to 90 degrees
+	go_to_angle(90.0, 1); // 90 degrees, 1ms delay per step
+	HAL_Delay(500);
+	// Go to 180 degrees
+	go_to_angle(180.0, 1); // 180 degrees, 1ms delay per step
   }
   /* USER CODE END 5 */
 }
