@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -41,7 +42,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef hspi1;
 
 //GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -52,9 +52,18 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* USER CODE BEGIN PV */
 
-/* USER CODE END PV */
+#define SPI_BUFFER_SIZE 10  // Buffer size
+
+SPI_HandleTypeDef hspi1;
+uint8_t txData[SPI_BUFFER_SIZE] = "HelloSPI";  // Data to send
+uint8_t rxData[SPI_BUFFER_SIZE];  // Buffer for received data
+osSemaphoreId_t spiTxRxSemaphore;  // Semaphore for SPI completion
+
+void StartSPI_Transfer();
+void SPI_Task(void *argument);
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -165,6 +174,15 @@ int main(void)
   // Disable motor
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
 
+  // Create Binary Semaphore for SPI Reception
+  spiTxRxSemaphore = osSemaphoreNew(1, 0, NULL);
+
+  // Create SPI Task
+  osThreadNew(SPI_Task, NULL, NULL);
+
+  // Start SPI Reception in Interrupt Mode
+  StartSPI_Transfer();
+
   /* Start scheduler */
   osKernelStart();
 
@@ -178,6 +196,49 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance == SPI1)
+    {
+        osSemaphoreRelease(spiTxRxSemaphore);  // Unblock SPI Task
+    }
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance == SPI1)
+    {
+        printf("SPI Error Occurred!\n");
+        osSemaphoreRelease(spiTxRxSemaphore);
+    }
+}
+
+
+void StartSPI_Transfer()
+{
+    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_IT(&hspi1, txData, rxData, SPI_BUFFER_SIZE);
+    if (status != HAL_OK)
+    {
+        printf("SPI Transfer Error!\n");
+    }
+}
+
+void SPI_Task(void *argument)
+{
+    while (1)
+    {
+        StartSPI_Transfer();  // Initiate SPI Transfer
+
+        // Wait until SPI transfer is complete
+        if (osSemaphoreAcquire(spiTxRxSemaphore, osWaitForever) == osOK)
+        {
+            printf("SPI Transfer Complete! Received: %s\n", rxData);
+        }
+
+        osDelay(1000);  // Delay before next SPI transfer
+    }
 }
 
 
