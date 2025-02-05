@@ -65,6 +65,7 @@ void SPI_Task(void *argument);
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
 void MX_TIM2_Init();
+void ITM_Init(void);
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -181,6 +182,8 @@ int main(void)
   // Create SPI Task
   osThreadNew(SPI_Task, NULL, NULL);
 
+//  ITM_Init();
+
   // Start SPI Reception in Interrupt Mode
   StartSPI_Transfer();
 
@@ -199,6 +202,14 @@ int main(void)
   /* USER CODE END 3 */
 }
 
+void ITM_Init(void)
+{
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;  // Enable ITM
+    ITM->LAR = 0xC5ACCE55;  // Unlock ITM
+    ITM->TCR |= ITM_TCR_ITMENA_Msk;  // Enable ITM
+    ITM->TER |= (1UL << 0);  // Enable Port 0
+}
+
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance == SPI1)
@@ -211,7 +222,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance == SPI1)
     {
-        printf("SPI Error Occurred!\n");
+//    	ITM_SendChar('Y');
         osSemaphoreRelease(spiTxRxSemaphore);
     }
 }
@@ -222,7 +233,7 @@ void StartSPI_Transfer()
     HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_IT(&hspi1, txData, rxData, SPI_BUFFER_SIZE);
     if (status != HAL_OK)
     {
-        printf("SPI Transfer Error!\n");
+//        printf("SPI Transfer Error!\n");
     }
 }
 
@@ -235,7 +246,8 @@ void SPI_Task(void *argument)
         // Wait until SPI transfer is complete
         if (osSemaphoreAcquire(spiTxRxSemaphore, osWaitForever) == osOK)
         {
-            printf("SPI Transfer Complete! Received: %s\n", rxData);
+
+//            printf("SPI Transfer Complete! Received: %s\n", rxData);
         }
 
         osDelay(1000);  // Delay before next SPI transfer

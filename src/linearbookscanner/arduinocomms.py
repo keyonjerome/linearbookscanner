@@ -84,11 +84,17 @@ class ArduinoComms:
                     self._running = False
             except Empty:
                 self._msg = [HEARTBEAT_COMMAND]
+            print("Sending",self._msg)
             result = self.spi_exchange(self._msg)
-            print(result)
+            print("Received",result)
             _logger.info(result)
+        self._spi.close()
+        GPIO.cleanup()
 
 
 if __name__ == "__main__":
     device = ArduinoComms()
-    device.run()
+    try:
+        device.run()
+    except KeyboardInterrupt:
+        device.shutdown()
