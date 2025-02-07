@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -42,8 +41,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
-//GPIO_InitTypeDef GPIO_InitStruct = {0};
+UART_HandleTypeDef huart1;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -52,35 +50,15 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* USER CODE BEGIN PV */
 
-#define SPI_BUFFER_SIZE 10  // Buffer size
-
-SPI_HandleTypeDef hspi1;
-uint8_t txData[SPI_BUFFER_SIZE] = "HelloSPI";  // Data to send
-uint8_t rxData[SPI_BUFFER_SIZE];  // Buffer for received data
-osSemaphoreId_t spiTxRxSemaphore;  // Semaphore for SPI completion
-
-void StartSPI_Transfer();
-void SPI_Task(void *argument);
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
-void MX_TIM2_Init();
-void ITM_Init(void);
+/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_SPI1_Init(void);
+static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void *argument);
-
-#define MOTOR_PULSE_PIN GPIO_PIN_0
-#define MOTOR_DIR_PIN GPIO_PIN_1
-#define MOTOR_ENABLE_PIN GPIO_PIN_2
-
-// Constants
-#define STEPS_PER_REVOLUTION 200 // For a 1.8° step angle motor
-#define MICROSTEPPING 16         // TB6600 microstepping setting (e.g., 1/16)
-#define TOTAL_STEPS (STEPS_PER_REVOLUTION * MICROSTEPPING) // Total steps per revolution
 
 /* USER CODE BEGIN PFP */
 
@@ -97,16 +75,6 @@ void StartDefaultTask(void *argument);
   */
 int main(void)
 {
-
-	/*
-	 * Does data need to be relayed to the RPi at all times?
-	 *
-	 *
-	 *
-	 *
-	 *
-	 */
-
 
   /* USER CODE BEGIN 1 */
 
@@ -130,9 +98,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SPI1_Init();
-  MX_TIM2_Init();
-
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -168,25 +134,6 @@ int main(void)
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
-  // Enable motor
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_SET);
-  // Set direction (clockwise)
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-
-  // Disable motor
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
-
-  // Create Binary Semaphore for SPI Reception
-  spiTxRxSemaphore = osSemaphoreNew(1, 0, NULL);
-
-  // Create SPI Task
-  osThreadNew(SPI_Task, NULL, NULL);
-
-//  ITM_Init();
-
-  // Start SPI Reception in Interrupt Mode
-  StartSPI_Transfer();
-
   /* Start scheduler */
   osKernelStart();
 
@@ -197,110 +144,10 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
-
-void ITM_Init(void)
-{
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;  // Enable ITM
-    ITM->LAR = 0xC5ACCE55;  // Unlock ITM
-    ITM->TCR |= ITM_TCR_ITMENA_Msk;  // Enable ITM
-    ITM->TER |= (1UL << 0);  // Enable Port 0
-}
-
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-    if (hspi->Instance == SPI1)
-    {
-        osSemaphoreRelease(spiTxRxSemaphore);  // Unblock SPI Task
-    }
-}
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
-{
-    if (hspi->Instance == SPI1)
-    {
-//    	ITM_SendChar('Y');
-        osSemaphoreRelease(spiTxRxSemaphore);
-    }
-}
-
-
-void StartSPI_Transfer()
-{
-    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_IT(&hspi1, txData, rxData, SPI_BUFFER_SIZE);
-    if (status != HAL_OK)
-    {
-//        printf("SPI Transfer Error!\n");
-    }
-}
-
-void SPI_Task(void *argument)
-{
-    while (1)
-    {
-        StartSPI_Transfer();  // Initiate SPI Transfer
-
-        // Wait until SPI transfer is complete
-        if (osSemaphoreAcquire(spiTxRxSemaphore, osWaitForever) == osOK)
-        {
-
-//            printf("SPI Transfer Complete! Received: %s\n", rxData);
-        }
-
-        osDelay(1000);  // Delay before next SPI transfer
-    }
-}
-
-
-
-void step_motor(uint32_t steps, uint32_t delay) {
-    for (uint32_t i = 0; i < steps; i++) {
-        HAL_GPIO_WritePin(GPIOA, MOTOR_PULSE_PIN, GPIO_PIN_SET); // Step high
-        HAL_Delay(delay);
-        HAL_GPIO_WritePin(GPIOA, MOTOR_PULSE_PIN, GPIO_PIN_RESET); // Step low
-        HAL_Delay(delay);
-    }
-}
-
-// Function to move the motor to a specific angle
-void go_to_angle(float target_angle, uint32_t delay) {
-    // Calculate the number of steps required
-    uint32_t steps = (uint32_t)((target_angle / 360.0) * TOTAL_STEPS);
-
-    // Set direction (clockwise or counterclockwise)
-    if (target_angle > 0) {
-        HAL_GPIO_WritePin(GPIOA, MOTOR_DIR_PIN, GPIO_PIN_SET); // Clockwise
-    } else {
-        HAL_GPIO_WritePin(GPIOA, MOTOR_DIR_PIN, GPIO_PIN_RESET); // Counterclockwise
-    }
-
-    // Step the motor
-    step_motor(steps, delay);
-}
-
-TIM_HandleTypeDef htim2;
-
-void MX_TIM2_Init(void) {
-    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-    TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-    htim2.Instance = TIM2;
-    htim2.Init.Prescaler = 0;
-    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 1000; // Adjust for desired step rate
-    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    HAL_TIM_Base_Init(&htim2);
-
-    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-    HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig);
-
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig);
 }
 
 /**
@@ -345,39 +192,35 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief SPI1 Initialization Function
+  * @brief USART1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_SPI1_Init(void)
+static void MX_USART1_UART_Init(void)
 {
 
-  /* USER CODE BEGIN SPI1_Init 0 */
+  /* USER CODE BEGIN USART1_Init 0 */
 
-  /* USER CODE END SPI1_Init 0 */
+  /* USER CODE END USART1_Init 0 */
 
-  /* USER CODE BEGIN SPI1_Init 1 */
+  /* USER CODE BEGIN USART1_Init 1 */
 
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_SLAVE;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN SPI1_Init 2 */
+  /* USER CODE BEGIN USART1_Init 2 */
 
-  /* USER CODE END SPI1_Init 2 */
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -388,18 +231,22 @@ static void MX_SPI1_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
   /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
 
-    GPIO_InitStruct.Pin = MOTOR_PULSE_PIN | MOTOR_DIR_PIN | MOTOR_ENABLE_PIN ;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
 
+  /*Configure GPIO pins : PA0 PA1 PA2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
