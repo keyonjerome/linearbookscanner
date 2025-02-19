@@ -14,7 +14,7 @@
 
 #define MOTOR_PULSE_PIN GPIO_PIN_0
 #define MOTOR_DIR_PIN GPIO_PIN_1
-#define MOTOR_ENABLE_PIN GPIO_PIN_2
+#define MOTOR_ENABLE_PIN GPIO_PIN_4
 
 // Constants
 #define STEPS_PER_REVOLUTION 200 // For a 1.8° step angle motor

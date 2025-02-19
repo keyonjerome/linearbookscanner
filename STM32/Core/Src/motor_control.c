@@ -11,12 +11,12 @@
 
 void motor_setup() {
 	  // Enable motor
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(GPIOA, MOTOR_ENABLE_PIN, GPIO_PIN_SET);
 	  // Set direction (clockwise)
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(GPIOA, MOTOR_DIR_PIN, GPIO_PIN_SET);
 
 	  // Disable motor
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin(GPIOA, MOTOR_ENABLE_PIN, GPIO_PIN_RESET);
 }
 
 
