@@ -379,8 +379,8 @@ void StartTask02(void *argument)
 	uint8_t msg[] = "Hello, USART2 over USB!\r\n";
     HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);  // Toggle LED
 	HAL_UART_Transmit(&huart1, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+	//HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+	//HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 
 	HAL_Delay(500);
   }
