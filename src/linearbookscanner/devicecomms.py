@@ -53,6 +53,7 @@ class DeviceComms:
         self._uart.write(encoded_message)
 
     def decode_and_print(self, data):
+        print()
         try:
             comms_message = CommsMessage()
             comms_message.ParseFromString(data)

@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "comms.h"
+#include "motor_control.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -355,10 +356,10 @@ void StartDefaultTask(void *argument)
   {
 
 	// Go to 90 degrees
-//	go_to_angle(90.0, 1); // 90 degrees, 1ms delay per step
-//	HAL_Delay(500);
-	// Go to 180 degrees
-//	go_to_angle(180.0, 1); // 180 degrees, 1ms delay per step
+	go_to_angle(90.0, 1); // 90 degrees, 1ms delay per step
+	HAL_Delay(500);
+	 Go to 180 degrees
+	go_to_angle(180.0, 1); // 180 degrees, 1ms delay per step
   }
   /* USER CODE END 5 */
 }
