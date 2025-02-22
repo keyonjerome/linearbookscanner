@@ -4,7 +4,7 @@ import serial
 import google.protobuf as nanopb
 from queue import Queue, Empty
 from comms_protocol_pb2 import CommsMessage, Command, CommandType
-
+import struct
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 _logger = logging.getLogger()
@@ -16,7 +16,25 @@ REVERSE_COMMAND = 0x03
 SHUTDOWN_COMMAND = 0x04
 
 class DeviceComms:
-    """Handles communication to the Arduino over UART"""
+    """Handles communication to the STM32 over UART"""
+
+
+    def receive_message(self):
+        # First, read the 4-byte header (assuming protobuf message length is sent first)
+        header = self._uart.read(4)
+        if len(header) != 4:
+            return None  # Failed to get full header
+
+        msg_length = struct.unpack('I', header)[0]  # Convert bytes to integer
+
+        # Now read the full protobuf message
+        message_data = self._uart.read(msg_length)
+        if len(message_data) != msg_length:
+            return None  # Incomplete message
+
+        msg = CommsMessage()
+        msg.ParseFromString(message_data)
+        return msg
 
     def __init__(self, port: str = "/dev/serial0", baudrate: int = 115200):
 
@@ -117,8 +135,8 @@ class DeviceComms:
             sequence_number += 1
 
             # Optionally, you can read response after sending if needed:
-            if self._uart.in_waiting > 0:
-                response = self._uart.read(self._uart.in_waiting)
+            if self._uart.in_waiting >= 4:
+                response = self.receive_message()
                 print("Received:", response)
                 self.decode_and_print(response)
                 _logger.info(response)
