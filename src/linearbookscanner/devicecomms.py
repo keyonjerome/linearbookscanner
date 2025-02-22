@@ -91,14 +91,14 @@ class DeviceComms:
         self._uart.close()
 
     def run(self):
-        """Main thread for the Arduino communication.
+        """Main thread for the STM32 communication.
         Sends heartbeat commands if none has been received."""
         self._running = True
         sequence_number = 1
         device = 0  # Assuming 0 corresponds to RPI
 
         while self._running:
-            time.sleep(1)
+            # time.sleep(1)
             try:
                 cmd = self._queue.get_nowait()  # Try to get command from the queue
                 self._msg = [cmd]
@@ -111,7 +111,7 @@ class DeviceComms:
             # Create the CommsMessage and send it
             command_type = self._msg[0]  # The command type will be the first element in the list
             comms_message = self.create_comms_message(sequence_number, device, command_type)
-            print(f"Sending {comms_message}")
+            # print(f"Sending {comms_message}")
             self.encode_and_send(comms_message)
             sequence_number += 1
 
