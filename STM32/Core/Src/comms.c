@@ -24,9 +24,9 @@ bool encode_command(CommsMessage *message) {
 
     // Transmit via UART
     if (HAL_UART_Transmit(&huart1, uart_tx_buffer, message_length, HAL_MAX_DELAY) != HAL_OK) {
-    		uint8_t msg[] = "Broken transmit!\r\n";
+//    		uint8_t msg[] = "Broken transmit!\r\n";
 //    	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);  // Toggle LED
-    		HAL_UART_Transmit(&huart1, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//    		HAL_UART_Transmit(&huart1, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
         return false;  // UART transmission failed
     }
 
