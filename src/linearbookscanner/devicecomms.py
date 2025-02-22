@@ -23,6 +23,7 @@ class DeviceComms:
         # First, read the 4-byte header (assuming protobuf message length is sent first)
         header = self._uart.read(4)
         if len(header) != 4:
+            print("Failed to get full header")
             return None  # Failed to get full header
 
         msg_length = struct.unpack('I', header)[0]  # Convert bytes to integer
@@ -30,6 +31,7 @@ class DeviceComms:
         # Now read the full protobuf message
         message_data = self._uart.read(msg_length)
         if len(message_data) != msg_length:
+            print("Incomplete message")
             return None  # Incomplete message
 
         msg = CommsMessage()
@@ -138,8 +140,9 @@ class DeviceComms:
             if self._uart.in_waiting >= 4:
                 response = self.receive_message()
                 print("Received:", response)
-                self.decode_and_print(response)
-                _logger.info(response)
+                if response != None:
+                    self.decode_and_print(response)
+                    _logger.info(response)
 
 
 if __name__ == "__main__":
