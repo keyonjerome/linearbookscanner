@@ -1,7 +1,7 @@
 import logging
 import time
 import serial
-import nanopb
+import google.protobuf as nanopb
 from queue import Queue, Empty
 from comms_protocol_pb2 import CommsMessage, Command, CommandType
 
