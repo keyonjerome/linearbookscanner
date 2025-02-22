@@ -5,14 +5,14 @@ import logging
 
 # from . import helpers
 from . import scanner
-from . import arduinocomms
+from . import devicecomms
 
 _logger = logging.getLogger(__name__)
 
 
 def motor_thread() -> None:
     """Run the motor communication thread"""
-    spi_runner = arduinocomms.ArduinoComms()
+    spi_runner = devicecomms.DeviceComms()
     spi_runner.run()
 
 

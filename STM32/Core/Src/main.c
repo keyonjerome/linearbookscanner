@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-
+#include "comms.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -355,10 +355,10 @@ void StartDefaultTask(void *argument)
   {
 
 	// Go to 90 degrees
-	go_to_angle(90.0, 1); // 90 degrees, 1ms delay per step
-	HAL_Delay(500);
+//	go_to_angle(90.0, 1); // 90 degrees, 1ms delay per step
+//	HAL_Delay(500);
 	// Go to 180 degrees
-	go_to_angle(180.0, 1); // 180 degrees, 1ms delay per step
+//	go_to_angle(180.0, 1); // 180 degrees, 1ms delay per step
   }
   /* USER CODE END 5 */
 }
@@ -376,9 +376,15 @@ void StartTask02(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	uint8_t msg[] = "Hello, USART2 over USB!\r\n";
+//	uint8_t msg[] = "Hello, USART2 over USB!\r\n";
     HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);  // Toggle LED
-	HAL_UART_Transmit(&huart1, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&huart1, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+
+	CommsMessage tx_message;
+	tx_message.device = comms_protocol_Device_STM32;
+	tx_message.sequence_number = 108;
+	tx_message.type = comms_protocol_MessageType_STATUS;
+	encode_command(&tx_message);
 	//HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 	//HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 
