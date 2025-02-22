@@ -51,32 +51,26 @@ class DeviceComms:
         self._uart.write(encoded_message)
 
     def decode_and_print(self, data):
-        """Decode the received data and print the command in human-readable format."""
         try:
-            # Decode the message using nanopb
             comms_message = nanopb.decode(CommsMessage, data)
 
-            # Print the decoded information
             print(f"Received CommsMessage:")
             print(f"  Sequence Number: {comms_message.sequence_number}")
             print(f"  Device: {'RPI' if comms_message.device == 0 else 'STM32'}")
-            print(f"  Type: {'COMMAND' if comms_message.type == 1 else 'RESPONSE' if comms_message.type == 2 else 'STATUS'}")
+            print(f"  Type: {comms_message.type}")
 
-            # Handle the message based on its type (in this case, COMMAND)
-            if comms_message.type == 1:
-                command = comms_message.msg.command
-                command_type = command.command_type
-
-                print(f"  Command Type: {self.get_command_name(command_type)}")
-
-                # Optionally print the payload or additional info if needed
-                if command_type == CommandType.FLIP_PAGE:
-                    print(f"    Command: Flip Page")
-                elif command_type == CommandType.RESET:
-                    print(f"    Command: Reset")
+            # Handle "oneof" field correctly
+            if comms_message.HasField("command"):
+                command = comms_message.command
+                print(f"  Command Type: {command.command_type}")
+            elif comms_message.HasField("response"):
+                print(f"  Response Code: {comms_message.response.response_code}")
+            elif comms_message.HasField("status"):
+                print(f"  Device State: {comms_message.status.state}")
 
         except Exception as e:
             print(f"Error decoding message: {e}")
+
 
     def get_command_name(self, command_type):
         """Helper function to map command type to human-readable text."""
