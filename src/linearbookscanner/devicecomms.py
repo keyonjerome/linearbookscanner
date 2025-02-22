@@ -47,14 +47,16 @@ class DeviceComms:
     def encode_and_send(self, message):
         """Encode the protobuf message and send over UART."""
         # Encode the message into binary using nanopb
-        encoded_message = nanopb.encode(CommsMessage, message)
+        encoded_message = message.SerializeToString() 
 
         # Send the encoded message over UART
         self._uart.write(encoded_message)
 
     def decode_and_print(self, data):
         try:
-            comms_message = nanopb.decode(CommsMessage, data)
+            comms_message = CommsMessage()
+            comms_message.ParseFromString(data)
+            # comms_message = data.ParseFromString(CommsMessage, data)
 
             print(f"Received CommsMessage:")
             print(f"  Sequence Number: {comms_message.sequence_number}")
