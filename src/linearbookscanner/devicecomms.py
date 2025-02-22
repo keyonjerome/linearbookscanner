@@ -19,6 +19,8 @@ class DeviceComms:
     """Handles communication to the Arduino over UART"""
 
     def __init__(self, port: str = "/dev/serial0", baudrate: int = 115200):
+
+        print(CommsMessage)
         self._port = port
         self._baudrate = baudrate
         self._running = False
@@ -38,7 +40,7 @@ class DeviceComms:
             sequence_number=sequence_number,
             type=1,  # Assuming it's a COMMAND message
             device=device,
-            msg={"command": command}
+            command=command
         )
         return comms_msg
 

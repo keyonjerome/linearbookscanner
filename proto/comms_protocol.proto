@@ -38,15 +38,13 @@ enum DeviceState {
 }
 
 message Status {
-    DeviceState state = 2;
-    uint32 ticks = 3;    
+    DeviceState state = 1; // Fixed field number
+    uint32 ticks = 2;    
 }
 
 message Command {
     CommandType command_type = 1; // Type of command
-    oneof payload {
-        bytes defaultpayload = 2; //
-    }
+    bytes payload = 2;            // Payload for the command
 }
 
 // Response message to return results or acknowledgments
