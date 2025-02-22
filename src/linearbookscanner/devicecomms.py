@@ -137,7 +137,8 @@ class DeviceComms:
             sequence_number += 1
 
             # Optionally, you can read response after sending if needed:
-            print(self._uart.in_waiting)
+            if self._uart.in_waiting != 0:
+                print(self._uart.in_waiting)
             if self._uart.in_waiting >= 4:
                 response = self.receive_message()
                 print("Received:", response)

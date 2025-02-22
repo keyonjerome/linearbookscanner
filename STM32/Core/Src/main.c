@@ -385,11 +385,13 @@ void StartTask02(void *argument)
 	tx_message.device = comms_protocol_Device_STM32;
 	tx_message.sequence_number = 108;
 	tx_message.type = comms_protocol_MessageType_STATUS;
+	tx_message.which_msg = 2;
+//	tx_message.msg = 1;
 	encode_command(&tx_message);
-	//HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
-	//HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
-
-	HAL_Delay(500);
+//	//HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//	//HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//
+//	HAL_Delay(500);
   }
   /* USER CODE END StartTask02 */
 }
