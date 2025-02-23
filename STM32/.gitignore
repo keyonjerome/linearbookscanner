@@ -13,7 +13,7 @@ Release/
 *.loadpath
 
 # STM32CubeMX generated files
-*.ioc
+# *.ioc
 *.mex
 *.log
 Makefile
