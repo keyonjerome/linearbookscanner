@@ -25,20 +25,19 @@ class DeviceComms:
         if len(header) != 4:
             print("Failed to get full header")
             return None  # Failed to get full header
-
+        print("Length header:",header)
         msg_length = struct.unpack('I', header)[0]  # Convert bytes to integer
-
+        print("Message length:",msg_length)
         # Now read the full protobuf message
         message_data = self._uart.read(msg_length)
-        if len(message_data) != msg_length:
-            print("Incomplete message")
-            return None  # Incomplete message
+        print("Raw data:",message_data)
+        # if len(message_data) != msg_length:
+        #     print("Incomplete message")
+        #     return None  # Incomplete message
 
-        msg = CommsMessage()
-        msg.ParseFromString(message_data)
-        return msg
+        return message_data
 
-    def __init__(self, port: str = "/dev/serial0", baudrate: int = 115200):
+    def __init__(self, port: str = "/dev/ttyS0", baudrate: int = 9600):
 
         print(CommsMessage)
         self._port = port
@@ -119,6 +118,7 @@ class DeviceComms:
         device = 0  # Assuming 0 corresponds to RPI
 
         while self._running:
+            time.sleep(0.1)
             # time.sleep(1)
             try:
                 cmd = self._queue.get_nowait()  # Try to get command from the queue
@@ -137,11 +137,9 @@ class DeviceComms:
             sequence_number += 1
 
             # Optionally, you can read response after sending if needed:
-            if self._uart.in_waiting != 0:
-                print(self._uart.in_waiting)
-            if self._uart.in_waiting >= 4:
+            if self._uart.in_waiting > 0:
                 response = self.receive_message()
-                print("Received:", response)
+                print("Received:\n", response)
                 if response != None:
                     self.decode_and_print(response)
                     _logger.info(response)

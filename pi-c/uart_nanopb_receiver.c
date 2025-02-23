@@ -90,7 +90,7 @@ void uart_receive_loop(int uart_fd) {
             // Decode the received message
             decode_command(uart_rx_buffer, received_len);
         } else {
-            printf("No data received\n");
+           // printf("No data received\n");
         }
     }
 }
