@@ -6,7 +6,10 @@
  */
 
 #include <motor_control.h>
+#include <state_machine.h>
 
+extern DeviceState current_state;
+extern DeviceState next_state;
 
 
 void motor_setup() {
@@ -44,22 +47,10 @@ void go_to_angle(float target_angle, uint32_t delay) {
     // Step the motor
     step_motor(steps, delay);
 }
-//
-//static void MX_GPIO_Init(void)
-//{
-///* USER CODE BEGIN MX_GPIO_Init_1 */
-///* USER CODE END MX_GPIO_Init_1 */
-//    GPIO_InitTypeDef GPIO_InitStruct = {0};
-//  /* GPIO Ports Clock Enable */
-//    __HAL_RCC_GPIOA_CLK_ENABLE();
-//
-//    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 ;
-//    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-//    GPIO_InitStruct.Pull = GPIO_NOPULL;
-//    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-//    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-//
-//
-///* USER CODE BEGIN MX_GPIO_Init_2 */
-///* USER CODE END MX_GPIO_Init_2 */
-//}
+
+void motor_task() {
+
+	switch (current_state) {
+
+	}
+}

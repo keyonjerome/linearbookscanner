@@ -28,5 +28,7 @@ extern UART_HandleTypeDef huart1;
 bool encode_command(CommsMessage *message);
 bool decode_command(CommsMessage *message);
 
+void runCommsTask(uint32_t *seq);
+
 
 #endif /* INC_COMMS_H_ */

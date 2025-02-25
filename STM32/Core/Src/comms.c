@@ -11,10 +11,9 @@
 #define UART_BUFFER_SIZE 128
 #define UART_TIMEOUT 100  // 100ms timeout
 
-
 // Function to encode and send a CommsMessage
 bool encode_command(CommsMessage *message) {
-    pb_ostream_t stream = pb_ostream_from_buffer(uart_tx_buffer, UART_BUFFER_SIZE);
+    pb_ostream_t stream = pb_ostream_from_buffer(uart_tx_buffer + 4, UART_BUFFER_SIZE - 4);
 
     if (!pb_encode(&stream, comms_protocol_CommsMessage_fields, message)) {
         return false;  // Encoding failed
@@ -22,11 +21,14 @@ bool encode_command(CommsMessage *message) {
 
     size_t message_length = stream.bytes_written;
 
+    // Prepend the 4-byte length header (little-endian format)
+    uart_tx_buffer[0] = message_length & 0xFF;
+    uart_tx_buffer[1] = (message_length >> 8) & 0xFF;
+    uart_tx_buffer[2] = (message_length >> 16) & 0xFF;
+    uart_tx_buffer[3] = (message_length >> 24) & 0xFF;
+
     // Transmit via UART
-    if (HAL_UART_Transmit(&huart1, uart_tx_buffer, message_length, HAL_MAX_DELAY) != HAL_OK) {
-//    		uint8_t msg[] = "Broken transmit!\r\n";
-//    	    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);  // Toggle LED
-//    		HAL_UART_Transmit(&huart1, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+    if (HAL_UART_Transmit(&huart1, uart_tx_buffer, message_length + 4, HAL_MAX_DELAY) != HAL_OK) {
         return false;  // UART transmission failed
     }
 
@@ -74,4 +76,25 @@ bool uart_transmit_receive(CommsMessage *tx_message, CommsMessage *rx_message) {
     }
 
     return true;
+}
+
+
+void runCommsTask(uint32_t *seq) {
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);  // Toggle LED
+    CommsMessage message = {0};
+    message.sequence_number = seq;
+	message.type = comms_protocol_MessageType_STATUS;
+	message.device = comms_protocol_Device_STM32;
+	message.which_msg = 2;  // Corresponding to status message
+
+	// Set the status message fields
+	message.msg.status.state = comms_protocol_DeviceState_RUNNING;
+	message.msg.status.ticks = HAL_GetTick();  // Example tick value
+//	tx_message.which_msg = 2;
+//	tx_message.msg = 1;
+	encode_command(&message);
+//	//HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//	//HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//
+	HAL_Delay(500);
 }
