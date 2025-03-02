@@ -6,6 +6,8 @@
  */
 
 #include "comms.h"
+#include "Arduino.h"
+#include <Arduino.h>
 
 // Define buffer sizes and UART settings
 #define UART_BUFFER_SIZE 128
@@ -27,10 +29,12 @@ bool encode_command(CommsMessage *message) {
     uart_tx_buffer[2] = (message_length >> 16) & 0xFF;
     uart_tx_buffer[3] = (message_length >> 24) & 0xFF;
 
-    // Transmit via UART
-    if (HAL_UART_Transmit(&huart1, uart_tx_buffer, message_length + 4, HAL_MAX_DELAY) != HAL_OK) {
-        return false;  // UART transmission failed
-    }
+    Serial.write(uart_tx_buffer,UART_BUFFER_SIZE);
+
+    // // Transmit via UART
+    // if (HAL_UART_Transmit(&huart1, uart_tx_buffer, message_length + 4, HAL_MAX_DELAY) != HAL_OK) {
+    //     return false;  // UART transmission failed
+    // }
 
     return true;
 }
@@ -39,11 +43,14 @@ bool encode_command(CommsMessage *message) {
 bool decode_command(CommsMessage *message) {
     memset(uart_rx_buffer, 0, UART_BUFFER_SIZE);
 
-    // Receive data via UART
-    if (HAL_UART_Receive(&huart1, uart_rx_buffer, UART_BUFFER_SIZE, HAL_MAX_DELAY) != HAL_OK) {
-        return false;  // UART receive failed
-    }
+    // // Receive data via UART
+    // if (HAL_UART_Receive(&huart1, uart_rx_buffer, UART_BUFFER_SIZE, HAL_MAX_DELAY) != HAL_OK) {
+    //     return false;  // UART receive failed
+    // }
 
+    String tempString = Serial.readString();
+    strncpy((char *)uart_rx_buffer, tempString.c_str(), sizeof(uart_rx_buffer) - 1);
+    
     pb_istream_t stream = pb_istream_from_buffer(uart_rx_buffer, UART_BUFFER_SIZE);
 
     if (!pb_decode(&stream, comms_protocol_CommsMessage_fields, message)) {
@@ -64,10 +71,10 @@ bool uart_transmit_receive(CommsMessage *tx_message, CommsMessage *rx_message) {
     size_t tx_length = ostream.bytes_written;
     memset(uart_rx_buffer, 0, UART_BUFFER_SIZE);
 
-    // Perform UART transmit and receive
-    if (HAL_UART_TransmitReceive(&huart1, uart_tx_buffer, uart_rx_buffer, tx_length, HAL_MAX_DELAY) != HAL_OK) {
-        return false;  // UART transmission/reception failed
-    }
+    // // Perform UART transmit and receive
+    // if (HAL_UART_TransmitReceive(&huart1, uart_tx_buffer, uart_rx_buffer, tx_length, HAL_MAX_DELAY) != HAL_OK) {
+    //     return false;  // UART transmission/reception failed
+    // }
 
     pb_istream_t istream = pb_istream_from_buffer(uart_rx_buffer, UART_BUFFER_SIZE);
 
@@ -89,12 +96,41 @@ void runCommsTask(uint32_t *seq) {
 
 	// Set the status message fields
 	message.msg.status.state = comms_protocol_DeviceState_RUNNING;
-	message.msg.status.ticks = HAL_GetTick();  // Example tick value
+	// message.msg.status.ticks = HAL_GetTick();  // Example tick value
 //	tx_message.which_msg = 2;
 //	tx_message.msg = 1;
 	encode_command(&message);
 //	//HAL_UART_Transmit(&huart2, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 //	//HAL_UART_Transmit(&huart6, msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 //
-	HAL_Delay(500);
+	// HAL_Delay(500);
+}
+
+
+void create_flip_page_message(uint32_t seq, comms_protocol_CommsMessage *msg) {
+    msg->sequence_number = seq;
+    msg->type = comms_protocol_MessageType_COMMAND;
+    msg->device = comms_protocol_Device_STM32;
+    msg->which_msg = comms_protocol_CommsMessage_command_tag;
+    msg->msg.command.command_type = comms_protocol_CommandType_FLIP_PAGE;
+    msg->msg.command.which_payload = 0; // No payload for this command
+}
+
+void create_status_message(uint32_t seq, comms_protocol_DeviceState state, uint32_t ticks, comms_protocol_CommsMessage *msg) {
+    msg->sequence_number = seq;
+    msg->type = comms_protocol_MessageType_STATUS;
+    msg->device = comms_protocol_Device_STM32;
+    msg->which_msg = comms_protocol_CommsMessage_status_tag;
+    msg->msg.status.state = state;
+    msg->msg.status.ticks = ticks;
+}
+
+
+void create_reset_command_message(uint32_t seq, comms_protocol_CommsMessage *msg) {
+    msg->sequence_number = seq;
+    msg->type = comms_protocol_MessageType_COMMAND;
+    msg->device = comms_protocol_Device_STM32;
+    msg->which_msg = comms_protocol_CommsMessage_command_tag;
+    msg->msg.command.command_type = comms_protocol_CommandType_RESET;
+    msg->msg.command.which_payload = 0; // No additional payload
 }
